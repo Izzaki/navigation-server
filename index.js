@@ -21,6 +21,7 @@ const server = net.createServer(socket => {
     const client = new Client(socket);
 
     socket.on('data', (data) => {
+        // console.log(data.toString('utf-8'));
         const msg = new InputMessage();
         msg.setBuffer(data);
         const sizeSummary = msg.getU16();
@@ -91,7 +92,7 @@ const server = net.createServer(socket => {
         outputMessage.addString(Commands.INIT);
         outputMessage.addString(getSerializedFriends());
         outputMessage.writeMessageSize();
-        broadcast(outputMessage);
+        broadcast(outputMessage.toBuffer());
         console.log(colors.yellow('Clients:'), clients.size);
     });
 
