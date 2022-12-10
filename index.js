@@ -11,7 +11,8 @@ const Commands = {
     UPDATE: 'update',
     SNAKE_UPDATE: 'snake_update',
     PING: 'ping',
-    STATUS: 'status'
+    STATUS: 'status',
+    PRIVATE: 'private',
 };
 
 const server = net.createServer(socket => {
@@ -32,6 +33,8 @@ const server = net.createServer(socket => {
 
         // TODO: move to actionManager
         if (command === Commands.INIT) {
+            // TODO: REMOVE ALL PARAMETERS AFTER FIRST. IT IS BETTER TO SEND EVERYTHING SERIALIZED IN 1 PARAMETER
+            // CURRENTLY parameter2, parameter3 used in Initialize?
             client.initialize(parameter, parameter2, parameter3);
             // in case if init was done again
             if (!clients.has(client)) {
@@ -72,8 +75,20 @@ const server = net.createServer(socket => {
             broadcast(data, socket);
             return;
         } else if (command === Commands.PING) {
-            socket.write(data);
+            broadcast(data, socket);
             return;
+        } else if (command === Commands.PRIVATE) {
+            // leader commands sent only to a selected mc (by id)
+            const [id, privateCommand, privateParam] = parameter.split("^");
+            const client = getClientById(id);
+            if (client) {
+                // It is creating a new private message with removed first 2 variables to satisfy bots parser.
+                const privateMessage = new OutputMessage();
+                privateMessage.addString(privateCommand);
+                privateMessage.addString(privateParam);
+                privateMessage.writeMessageSize();
+                client.socket.write(privateMessage.toBuffer());
+            }
         } else {
             // leader commands
             broadcast(data, socket);
@@ -150,4 +165,8 @@ const sortClientsAlphabetically = () => {
                 ? 1
                 : 0;
     }));
+};
+
+const getClientById = (id) => {
+    return Array.from(clients).find(client => client.id === id)
 };
